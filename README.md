@@ -1,4 +1,4 @@
-# Claude Code ↔ ChatGPT Bridge
+# Claude Codex Bridge
 
 专门为 **Claude Code 和 ChatGPT 用户**做的双向协作工具：一起讨论方案、Debug、互审代码。**ChatGPT 一侧通过 Codex 桌面应用或 Codex CLI 接入**。
 
@@ -8,7 +8,7 @@
 
 ## Windows 一键安装
 
-从 [Releases](https://github.com/cjxkdc/agent-peer-bridge/releases) 下载：
+从 [Releases](https://github.com/cjxkdc/claude-codex-bridge/releases) 下载：
 
 - `agent-peer-bridge-v0.4.0-windows-x64-Setup.exe`：双击安装。
 - 或下载 ZIP，完整解压后双击 `agent-peer-bridge/Install.cmd`。
