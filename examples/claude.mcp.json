@@ -1,0 +1,1 @@
+{"mcpServers":{"codex-peer":{"type":"stdio","command":"C:/path/to/node.exe","args":["C:/path/to/agent-peer-bridge/src/server.mjs","--peer=codex"]}}}

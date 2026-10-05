@@ -1,0 +1,5 @@
+[mcp_servers.claude-peer]
+command = 'C:\path\to\node.exe'
+args = ['C:\path\to\agent-peer-bridge\src\server.mjs', '--peer=claude']
+startup_timeout_sec = 20
+tool_timeout_sec = 360

@@ -1,0 +1,8 @@
+node_modules/
+.local/
+*.log
+vendor/
+dist/
+demo/*-result.json
+demo/*-discussion.json
+/VALIDATION.md

@@ -1,0 +1,25 @@
+name: Windows release
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - shell: pwsh
+        run: ./scripts/Build-Release.ps1 -MakeExe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*
