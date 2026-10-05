@@ -3,6 +3,7 @@ node_modules/
 *.log
 vendor/
 dist/
+reports/
 demo/*-result.json
 demo/*-discussion.json
 /VALIDATION.md

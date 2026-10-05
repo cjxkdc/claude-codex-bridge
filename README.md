@@ -6,10 +6,10 @@ Claude Code ↔ Codex CLI 本地双向讨论与审查工具。调用本机已登
 
 从 [Releases](https://github.com/cjxkdc/agent-peer-bridge/releases) 下载：
 
-- `agent-peer-bridge-v0.3.0-windows-x64-Setup.exe`：双击安装。
+- `agent-peer-bridge-v0.3.1-windows-x64-Setup.exe`：双击安装。
 - 或下载 ZIP，完整解压后双击 `agent-peer-bridge/Install.cmd`。
 
-内置官方 Node 24.21.0 和运行依赖，无需额外安装 Node/Python，不需要管理员权限。安装目录为 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.3.0`，可以移走下载的安装包。CLI/订阅不包含在安装包内：需要已经安装官方 Codex、Claude Code 或带原生 CLI 的桌面客户端；默认收集 Git diff 还需要 Git。当前只提供 Windows x64 包；安装程序未做代码签名，使用 Windows 内置 .NET Framework。
+内置官方 Node 24.21.0 和运行依赖，无需额外安装 Node/Python，不需要管理员权限。安装目录为 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.3.1`，可以移走下载的安装包。CLI/订阅不包含在安装包内：需要已经安装官方 Codex、Claude Code 或带原生 CLI 的桌面客户端；默认收集 Git diff 还需要 Git。当前只提供 Windows x64 包；安装程序未做代码签名，使用 Windows 内置 .NET Framework。
 
 安装会：发现符合安全参数要求的官方 CLI，备份用户配置、注册双方 MCP、安装讨论技能。保留其他 MCP 项目。安装失败会显示具体缺失的 CLI/参数，不偷偷使用 API key。
 
@@ -32,6 +32,16 @@ Claude Code ↔ Codex CLI 本地双向讨论与审查工具。调用本机已登
 一轮 = 当前对话的 host 提出或回应观点 + peer CLI 回复。当前 Codex/Claude 是参与者，bridge 只启动另一方；不会额外启动一个同名模型冒充当前对话。默认 3 轮，支持 1–20 轮，到达上限由程序强制关闭，也可提前结束。每轮传递之前的讨论；host 可在用户授权内补充日志、验证假设、运行测试或实施修复，再回应 peer。
 
 讨论结束返回共识、分歧、证据与下一步。peer 永远只读；用户已要求实现/Debug 时，当前 host 继续完成授权工作。只要求讨论时返回方案。
+
+## 在哪里看聊天记录
+
+从 v0.3.1 起，每轮自动保存到 **bridge 安装目录下的 `reports/discussions/`**。每个讨论一个 `日期_会话ID.md` 和一个同名 `.json`：Markdown 按轮次显示双方实际发言，JSON 可供程序读取。记录在等待 peer 回复前、收到回复后、发生错误或提前结束时更新，结束后 host 会给出 Markdown 路径。文件不会随一小时会话过期或 MCP 重启而删除；活动会话仍不能在重启后继续。升级安装包会使用新的版本目录，旧记录保留在旧版本目录。
+
+也可在对话里说：“把刚才的讨论记录完整展示出来”“打开这次讨论的 Markdown 记录”。工具返回中的 `transcript` 可直接查看；`record.markdown_path` 和 `record.json_path` 是文件路径。`record.save_status` 若为 `failed`，会返回具体错误，host 应说明没有成功保存。
+
+记录包含 **host 实际发给 peer 的发言及 peer 返回的正文**，不包含模型内部思考、整个主对话或完整文件/context 快照。单条 peer 回复超过 20,000 字符会截断并标记；达到长度限制即关闭讨论。历史版本未落盘的会话不能凭空恢复；若仍能取到工具返回中的 transcript，可手动另存。
+
+记录仅存本机，`reports/` 已被 Git 忽略，安装包不包含它。peer 仍只读；讨论工具的 MCP `readOnlyHint` 为 false，是因为 bridge 会写自身的记录文件。
 
 ## MCP 接口
 
@@ -56,9 +66,9 @@ Codex 用户 MCP：`claude-peer`；Claude Code 用户 MCP：`codex-peer`。
 {"action":"continue","session_id":"返回的 ID","host_message":"我验证了你的假设，结果是……，因此建议……","context":"新证据"}
 ```
 
-返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason` 和 `transcript`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数和 cwd 不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
+返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason`、`transcript`、`created_at`、`updated_at` 和 `record`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数和 cwd 不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
 
-会话在 MCP 进程内存保存，一小时无活动过期；重启服务会失去会话。最多 32 个会话，每个服务进程只允许一次 peer 请求进行中。默认 peer 超时 180 秒，上限 300 秒；安装器设置 Codex MCP 超时 360 秒。
+活动会话在 MCP 进程内存保存，一小时无活动过期；重启服务会失去活动会话，但已保存的记录仍在本机。最多 32 个会话，每个服务进程只允许一次 peer 请求进行中。默认 peer 超时 180 秒，上限 300 秒；安装器设置 Codex MCP 超时 360 秒。
 
 ## 只读与认证边界
 
@@ -100,6 +110,7 @@ $cfg = Get-Content .local/config.json -Raw -Encoding UTF8 | ConvertFrom-Json
 ```text
 src/bridge.mjs       单跳 CLI adapter、输入保护、超时
 src/discussion.mjs   多轮会话与预算
+src/records.mjs      Markdown/JSON 讨论记录
 src/server.mjs       官方 MCP SDK stdio server
 scripts/            安装、注册、打包、demo
 skills/             Codex/Claude Code 讨论入口

@@ -3,7 +3,7 @@ import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {z} from 'zod';
 import {invoke} from './bridge.mjs';
 import {discuss} from './discussion.mjs';
-const server=new McpServer({name:'agent-peer-bridge',version:'0.3.0'});
+const server=new McpServer({name:'agent-peer-bridge',version:'0.3.1'});
 const selected=process.argv.find(a=>a.startsWith('--peer='))?.slice(7);
 if(selected&&!['claude','codex'].includes(selected))throw Error('Invalid peer filter');
 for(const peer of selected?[selected]:['claude','codex']) for(const mode of ['review','ask','explain','plan-review']) {
@@ -19,7 +19,7 @@ for(const peer of selected?[selected]:['claude','codex']) {
     max_rounds:z.number().int().min(1).max(20).optional(),cwd:z.string().optional(),
     files:z.array(z.string()).max(20).optional(),context:z.string().max(200000).optional(),
     include_diff:z.boolean().optional(),timeout_ms:z.number().int().min(1000).max(300000).optional()
-  },{readOnlyHint:true,destructiveHint:false,openWorldHint:true},async input=>{
+  },{readOnlyHint:false,destructiveHint:false,openWorldHint:true},async input=>{
     try {const result=await discuss({...input,peer});return {isError:result.stop_reason==='peer-error',content:[{type:'text',text:JSON.stringify(result)}]};}
     catch(e){return {isError:true,content:[{type:'text',text:e.message}]};}
   });
