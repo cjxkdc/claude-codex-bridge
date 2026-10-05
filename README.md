@@ -1,6 +1,10 @@
-# Agent Peer Bridge
+# Claude Code ↔ ChatGPT Bridge
 
-Claude Code ↔ Codex CLI 本地双向讨论与审查工具。调用本机已登录的官方 CLI，使用现有订阅；不要求 Anthropic/OpenAI API key。支持实现方案、Debug、多轮讨论、review、ask、explain 与 plan-review。
+专门为 **Claude Code 和 ChatGPT 用户**做的双向协作工具：一起讨论方案、Debug、互审代码。**ChatGPT 一侧通过 Codex 桌面应用或 Codex CLI 接入**。
+
+使用你已有的订阅，调用本机已登录的官方 `claude` 和 `codex` CLI，无需 API key。可以指定模型、思考强度和讨论轮数，并自动保存双方发言。
+
+**Altman❤Dario**
 
 ## Windows 一键安装
 
@@ -17,7 +21,7 @@ Claude Code ↔ Codex CLI 本地双向讨论与审查工具。调用本机已登
 
 ## 怎么用
 
-在 Codex 输入：
+在 Codex（ChatGPT 一侧）输入：
 
 > 我需要 Debug 登录后白屏。你和 CC 讨论一下，最大讨论轮数 3，确定方案后修复。
 
