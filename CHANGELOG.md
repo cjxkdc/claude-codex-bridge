@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- Select the peer model and reasoning effort per discussion, review, ask, explain or plan-review in either direction.
+- Remember discussion settings across rounds; explicit changes or resets affect subsequent rounds without extending the budget.
+- Record each round's requested settings and Claude CLI model-usage names when reported; do not infer effective effort.
+- Explicit Claude effort overrides an inherited effort environment variable while preserving subscription-only authentication and read-only protections.
+
 ## 0.3.1
 
 - Save discussion messages to local Markdown and JSON records before and after every peer attempt, including failures and early conclusions.

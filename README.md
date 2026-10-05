@@ -6,10 +6,10 @@ Claude Code ↔ Codex CLI 本地双向讨论与审查工具。调用本机已登
 
 从 [Releases](https://github.com/cjxkdc/agent-peer-bridge/releases) 下载：
 
-- `agent-peer-bridge-v0.3.1-windows-x64-Setup.exe`：双击安装。
+- `agent-peer-bridge-v0.4.0-windows-x64-Setup.exe`：双击安装。
 - 或下载 ZIP，完整解压后双击 `agent-peer-bridge/Install.cmd`。
 
-内置官方 Node 24.21.0 和运行依赖，无需额外安装 Node/Python，不需要管理员权限。安装目录为 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.3.1`，可以移走下载的安装包。CLI/订阅不包含在安装包内：需要已经安装官方 Codex、Claude Code 或带原生 CLI 的桌面客户端；默认收集 Git diff 还需要 Git。当前只提供 Windows x64 包；安装程序未做代码签名，使用 Windows 内置 .NET Framework。
+内置官方 Node 24.21.0 和运行依赖，无需额外安装 Node/Python，不需要管理员权限。安装目录为 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.4.0`，可以移走下载的安装包。CLI/订阅不包含在安装包内：需要已经安装官方 Codex、Claude Code 或带原生 CLI 的桌面客户端；默认收集 Git diff 还需要 Git。当前只提供 Windows x64 包；安装程序未做代码签名，使用 Windows 内置 .NET Framework。
 
 安装会：发现符合安全参数要求的官方 CLI，备份用户配置、注册双方 MCP、安装讨论技能。保留其他 MCP 项目。安装失败会显示具体缺失的 CLI/参数，不偷偷使用 API key。
 
@@ -33,6 +33,22 @@ Claude Code ↔ Codex CLI 本地双向讨论与审查工具。调用本机已登
 
 讨论结束返回共识、分歧、证据与下一步。peer 永远只读；用户已要求实现/Debug 时，当前 host 继续完成授权工作。只要求讨论时返回方案。
 
+## 在对话里选择模型和思考强度
+
+在 Codex 里说：
+
+> 你和 CC 讨论这个 bug，Claude 用 Opus 5.5，思考强度 high，最多 3 轮。
+
+在 Claude Code 里说：
+
+> 你和 Codex 讨论这个方案，Codex 用 gpt-6.1-sol，思考强度 xhigh，最多 3 轮。
+
+模型和强度会通过 CLI 参数传入，不只是写在 prompt 里。Claude 接受 `opus`、`sonnet`、`haiku` 等 CLI 别名或完整模型 ID，例如 `claude-opus-5-5`；Codex 使用其账户可用的 CLI 模型 ID。Claude 强度支持 `low/medium/high/xhigh/max`；Codex 参数接受 `none/minimal/low/medium/high/xhigh/max/ultra`，具体可用档位仍取决于模型、账户和 CLI。模型不可用或参数被拒绝时返回错误，bridge 不自行改用其他模型。官方说明：[Claude 参数](https://code.claude.com/docs/en/cli-reference)、[Codex 配置](https://learn.chatgpt.com/docs/config-file/config-reference)。
+
+没指定就沿用 CLI 默认。同一讨论后续轮次沿用已选设置；你明确说“下一轮改用 Sonnet，medium”时，可以在同一个 session 上修改，轮数上限不变。传 `model: "default"` 或 `effort: "auto"` 可重置对应选项，省略另一项则保留它。
+
+参数控制被调用的 peer；当前聊天窗口的 host 模型和强度由其界面设置决定。聊天记录显示每轮的**请求参数**，Claude JSON 若提供 `modelUsage`，也保存其报告的使用模型名称。CLI 可能受组织策略、模型限制或自身回退规则影响；工具不把请求强度标成已经独立验证的实际强度。显式指定 Claude 强度时会移除子进程继承的 `CLAUDE_CODE_EFFORT_LEVEL`，避免其覆盖本次 `--effort`。
+
 ## 在哪里看聊天记录
 
 从 v0.3.1 起，每轮自动保存到 **bridge 安装目录下的 `reports/discussions/`**。每个讨论一个 `日期_会话ID.md` 和一个同名 `.json`：Markdown 按轮次显示双方实际发言，JSON 可供程序读取。记录在等待 peer 回复前、收到回复后、发生错误或提前结束时更新，结束后 host 会给出 Markdown 路径。文件不会随一小时会话过期或 MCP 重启而删除；活动会话仍不能在重启后继续。升级安装包会使用新的版本目录，旧记录保留在旧版本目录。
@@ -52,12 +68,12 @@ Codex 用户 MCP：`claude-peer`；Claude Code 用户 MCP：`codex-peer`。
 | Claude | `claude_review`, `claude_ask`, `claude_explain`, `claude_plan_review`, `claude_discuss` |
 | Codex | `codex_review`, `codex_ask`, `codex_explain`, `codex_plan_review`, `codex_discuss` |
 
-单次工具参数：绝对 `cwd`，相对 `files`，`request`，`context`，`include_diff`，`timeout_ms`。默认收集 tracked staged/unstaged diff；未跟踪文件必须列入 `files`。不会自动传整个仓库或聊天历史。
+单次工具参数：绝对 `cwd`，相对 `files`，`request`，`context`，`include_diff`，`timeout_ms`，可选 `model`、`effort`。默认收集 tracked staged/unstaged diff；未跟踪文件必须列入 `files`。不会自动传整个仓库或聊天历史。
 
 讨论首次调用：
 
 ```json
-{"action":"start","objective":"Debug 登录后白屏","host_message":"我的初步判断与证据……","max_rounds":3,"cwd":"C:/projects/my-app","files":["src/auth.js"],"context":"报错与复现步骤"}
+{"action":"start","objective":"Debug 登录后白屏","host_message":"我的初步判断与证据……","max_rounds":3,"cwd":"C:/projects/my-app","files":["src/auth.js"],"context":"报错与复现步骤","model":"claude-opus-5-5","effort":"high"}
 ```
 
 继续同一讨论：
@@ -66,7 +82,7 @@ Codex 用户 MCP：`claude-peer`；Claude Code 用户 MCP：`codex-peer`。
 {"action":"continue","session_id":"返回的 ID","host_message":"我验证了你的假设，结果是……，因此建议……","context":"新证据"}
 ```
 
-返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason`、`transcript`、`created_at`、`updated_at` 和 `record`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数和 cwd 不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
+返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason`、`transcript`、`created_at`、`updated_at`、`peer_options` 和 `record`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数和 cwd 不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
 
 活动会话在 MCP 进程内存保存，一小时无活动过期；重启服务会失去活动会话，但已保存的记录仍在本机。最多 32 个会话，每个服务进程只允许一次 peer 请求进行中。默认 peer 超时 180 秒，上限 300 秒；安装器设置 Codex MCP 超时 360 秒。
 
@@ -111,6 +127,7 @@ $cfg = Get-Content .local/config.json -Raw -Encoding UTF8 | ConvertFrom-Json
 src/bridge.mjs       单跳 CLI adapter、输入保护、超时
 src/discussion.mjs   多轮会话与预算
 src/records.mjs      Markdown/JSON 讨论记录
+src/models.mjs       peer 模型/强度参数与校验
 src/server.mjs       官方 MCP SDK stdio server
 scripts/            安装、注册、打包、demo
 skills/             Codex/Claude Code 讨论入口
@@ -123,9 +140,8 @@ examples/           手动 MCP 配置、项目说明示例
 
 ## 验证与官方资料
 
-[验证记录](docs/VALIDATION.md)。真实 Codex CLI 单次审查和两轮 Debug 讨论已通过；Claude 的真实模型回复需在本机完成其订阅 CLI 登录后验证。自动测试不需要任何账户/API key。
+[验证记录](docs/VALIDATION.md)。真实 Codex CLI 单次审查和两轮 Debug 讨论已通过；双方 CLI 通过 MCP 指定模型/强度的讨论也已验证，并保存了记录。验证 host 发言由演示脚本提供。自动测试不需要任何账户/API key。
 
 [Codex 非交互模式](https://learn.chatgpt.com/docs/non-interactive-mode) · [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli) · [Claude CLI](https://code.claude.com/docs/en/cli-reference) · [Claude MCP](https://code.claude.com/docs/en/mcp) · [第三方许可](THIRD_PARTY_NOTICES.md)
 
 MIT License。
-
