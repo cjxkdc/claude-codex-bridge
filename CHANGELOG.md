@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- Optional, explicitly authorized edit discussions in both directions; review/ask/explain/plan-review remain read-only.
+- Apply peer-proposed create/update contents only to a fixed editable-file list after validation, backups and conflict checks. No peer shell access or deletion.
+- Reject protected paths, link-based escapes and oversized/binary edits; attempt rollback on write failures and report retained changes.
+- Record access, scope and per-round application results; update both discussion skills and Windows installer.
+
+
 ## 0.4.0
 
 - Select the peer model and reasoning effort per discussion, review, ask, explain or plan-review in either direction.

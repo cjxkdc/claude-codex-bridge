@@ -4,7 +4,7 @@
 
 ## 安装细节
 
-Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.4.0`。安装后可以移走下载的安装包。
+Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.5.0`。安装后可以移走下载的安装包。
 
 安装程序会查找符合要求的官方 CLI，备份用户配置，注册双方 MCP，并安装讨论技能。其他 MCP 配置会保留。缺少 CLI 或必要参数时，会显示错误。
 
@@ -36,7 +36,25 @@ Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.4.0`
 
 记录包含 **host 实际发给 peer 的发言及 peer 返回的正文**，不包含模型内部思考、整个主对话或完整文件/context 快照。单条 peer 回复超过 20,000 字符会截断并标记；达到长度限制即关闭讨论。历史版本未落盘的会话不能凭空恢复；若仍能取到工具返回中的 transcript，可手动另存。
 
-记录仅存本机，`reports/` 已被 Git 忽略，安装包不包含它。peer 仍只读；讨论工具的 MCP `readOnlyHint` 为 false，是因为 bridge 会写自身的记录文件。
+记录仅存本机，`reports/` 已被 Git 忽略，安装包不包含它。默认讨论和单次审查只读；讨论工具的 MCP `readOnlyHint` 为 false，`destructiveHint` 为 true，因为它会保存记录，并可在明确授权后写入指定项目文件。
+
+## 修改权限
+
+讨论默认 `access: "read-only"`。用户明确允许对方修改时，发起讨论传 `access: "edit"` 和 `edit_files`，例如：
+
+```json
+{"action":"start","objective":"修复登录白屏","host_message":"已定位问题，允许你修改以下文件","cwd":"C:/projects/my-app","max_rounds":3,"access":"edit","edit_files":["src/auth.js","test/auth.test.js"]}
+```
+
+对方通过结构化输出返回 `reply` 和 `edits: [{"path":"src/auth.js","content":"完整的新内容"}]`。Claude 使用 `--json-schema`，Codex 使用 `--output-schema`。bridge 验证范围，备份原文件，检查文件是否在等待期间发生变化，再写入项目。CLI 仍在临时目录运行，不能直接执行命令或修改项目。
+
+- 可创建或更新明确列出的 UTF-8 文本文件，最多 20 个，每个 100KB，合计 200KB。当前不支持删除文件。
+- 拒绝越界路径、符号链接、目录连接、硬链接、二进制，以及凭据和 agent 配置文件。
+- 会话的 `access` 和 `edit_files` 固定，不能在后续轮次扩大权限。新的文件快照会在每轮调用时读取。
+- `edit_result.status` 为 `applied` 才表示写入成功；`no-changes` 表示没有修改。`conflict/rejected/failed/partial` 会结束讨论，按返回的 `changes` 和 `error` 检查实际结果。
+- 原文件备份在 `.local/edit-backups/edit-*/files/`，`manifest.json` 保存路径和修改前后的 SHA-256。备份失败不会开始写入；写入中途失败会尝试回滚，未能回滚的文件会明确列出。
+- 检查是写入前的冲突检测，不是跨进程文件锁。等待对方返回期间，当前助手应避免修改同一文件；写入后由当前助手检查 diff、运行测试。
+- 记录保存权限、可修改文件和每轮实际修改状态，不保存结构化输出中的完整文件内容。备份留在本机，不进入仓库或安装包。
 
 ## MCP 接口
 
@@ -61,18 +79,18 @@ Codex 用户 MCP：`claude-peer`；Claude Code 用户 MCP：`codex-peer`。
 {"action":"continue","session_id":"返回的 ID","host_message":"我验证了你的假设，结果是……，因此建议……","context":"新证据"}
 ```
 
-返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason`、`transcript`、`created_at`、`updated_at`、`peer_options` 和 `record`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数和 cwd 不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
+返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason`、`transcript`、`created_at`、`updated_at`、`peer_options` 和 `record`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数、cwd、修改权限和文件范围不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
 
 活动会话在 MCP 进程内存保存，一小时无活动过期；重启服务会失去活动会话，但已保存的记录仍在本机。最多 32 个会话，每个服务进程只允许一次 peer 请求进行中。默认 peer 超时 180 秒，上限 300 秒；安装器设置 Codex MCP 超时 360 秒。
 
-## 只读与认证边界
+## 权限与登录
 
 - host 收集指定文件/diff，peer 在临时空目录接收快照。最多 20 个文件，每文件 100KB，合计 200KB；拒绝越界路径、二进制和常见凭据文件。不是通用脱敏系统，勿把秘密放进 context 或源码。材料会发送到对应官方模型服务。
 - Claude：`--print --tools "" --safe-mode --restricted --strict-mcp-config`，无命令/文件/MCP 工具。避免会跳过订阅 OAuth 的 `--bare`。
 - Codex：`exec --ignore-user-config --ignore-rules --sandbox read-only --ephemeral --json`，禁用 shell、执行工具、hooks、plugins、apps、browser、computer use、multi-agent，强制 ChatGPT 登录。
 - 清理常见 API key/第三方 provider 环境变量；Claude 预检只接受订阅 OAuth。额度仍受各自订阅限制。
 - 子进程继承 `AGENT_PEER_DEPTH=1`；嵌套 bridge 调用被拒绝。多轮讨论由授权 host 显式推进，不靠 agent 互相递归调用。
-- 快照审查不能自动探索未提供的调用链；不代表已经运行测试。CLI 自身可能刷新登录、缓存或日志，但不修改用户工作树。输出上限 2MB，Windows 超时终止对应进程树。
+- 快照审查不能自动探索未提供的调用链；不代表已经运行测试。CLI 自身可能刷新登录、缓存或日志，；授权的修改由 bridge 验证后写入用户工作树。输出上限 2MB，Windows 超时终止对应进程树。
 
 ## 从源码安装与开发
 
@@ -106,6 +124,7 @@ $cfg = Get-Content .local/config.json -Raw -Encoding UTF8 | ConvertFrom-Json
 src/bridge.mjs       单跳 CLI adapter、输入保护、超时
 src/discussion.mjs   多轮会话与预算
 src/records.mjs      Markdown/JSON 讨论记录
+src/edits.mjs        修改授权、文件校验、备份和应用
 src/models.mjs       peer 模型/强度参数与校验
 src/server.mjs       官方 MCP SDK stdio server
 scripts/            安装、注册、打包、demo

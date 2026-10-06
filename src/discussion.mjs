@@ -3,6 +3,7 @@ import {invoke,root} from './bridge.mjs';
 import path from 'node:path';
 import {createTranscriptWriter} from './records.mjs';
 import {normalizeOptions} from './models.mjs';
+import {normalizeAccess} from './edits.mjs';
 
 // The calling conversation is the host speaker. Only the opposite CLI is launched.
 // A round is one host contribution followed by at most one peer invocation.
@@ -15,7 +16,7 @@ export function createDiscussions(callPeer=invoke,{now=Date.now,saveRecord=null}
   function view(s) {
     return {session_id:s.id,peer:s.peer,host:s.peer==='claude'?'codex':'claude',objective:s.objective,
       max_rounds:s.max_rounds,rounds_used:s.rounds_used,rounds_remaining:s.max_rounds-s.rounds_used,
-      status:s.status,stop_reason:s.stop_reason||null,read_only:true,cwd:s.cwd,
+      status:s.status,stop_reason:s.stop_reason||null,access:s.access,edit_files:[...s.edit_files],read_only:s.access==='read-only',cwd:s.cwd,
       created_at:new Date(s.created).toISOString(),updated_at:new Date(s.touched).toISOString(),
       record:s.record||null,peer_options:{...s.peer_options},
       transcript:s.transcript.map(t=>({...t})),
@@ -43,8 +44,9 @@ export function createDiscussions(callPeer=invoke,{now=Date.now,saveRecord=null}
       if(typeof input.cwd!=='string'||!path.isAbsolute(input.cwd))throw Error('cwd must be an absolute directory path');
       text(input.context??'','context',{max:200000});
       const peer_options=normalizeOptions(peer,input);
+      const permissions=normalizeAccess(input);
       if(sessions.size>=32)throw Error('Too many discussions; sessions expire after one idle hour');
-      s={id:randomUUID(),peer,objective,max_rounds,rounds_used:0,status:'open',transcript:[],peer_options,
+      s={id:randomUUID(),peer,objective,max_rounds,rounds_used:0,status:'open',transcript:[],peer_options,...permissions,
         cwd:input.cwd,files:input.files||[],context:input.context||'',include_diff:input.include_diff??true,created:now(),touched:now(),in_flight:false};
       sessions.set(s.id,s);
     } else {
@@ -65,6 +67,8 @@ export function createDiscussions(callPeer=invoke,{now=Date.now,saveRecord=null}
       if(s.status!=='open')throw Error('Discussion closed; round budget cannot be extended');
       if(input.max_rounds!==undefined&&input.max_rounds!==s.max_rounds)throw Error('Round budget is immutable');
       if(input.cwd!==undefined&&input.cwd!==s.cwd)throw Error('Discussion cwd is immutable');
+      if(input.access!==undefined&&input.access!==s.access)throw Error('Discussion access is immutable; do not escalate an existing session');
+      if(input.edit_files!==undefined&&JSON.stringify(normalizeAccess({access:s.access,edit_files:input.edit_files}).edit_files)!==JSON.stringify(s.edit_files))throw Error('Editable file scope is immutable');
       text(host_message,'host_message',{required:true});
       s.peer_options=normalizeOptions(peer,{
         model:input.model===undefined?s.peer_options.model??undefined:input.model,
@@ -83,12 +87,13 @@ export function createDiscussions(callPeer=invoke,{now=Date.now,saveRecord=null}
     if(saveRecord)await save(s);
     try {
       const result=await callPeer({peer:s.peer,mode:'discuss',cwd:s.cwd,files:input.files??s.files,
-        include_diff:input.include_diff??s.include_diff,context,request,timeout_ms:input.timeout_ms??180000,
+        include_diff:input.include_diff??s.include_diff,context,request,timeout_ms:input.timeout_ms??180000,access:s.access,edit_files:s.edit_files,
         ...(peer_options.model?{model:peer_options.model}:{}),...(peer_options.effort?{effort:peer_options.effort}:{})});
       const truncated=result.result.length>messageLimit;
       s.transcript.push({round,speaker:s.peer,timestamp:new Date(now()).toISOString(),peer_options,
-        ...(result.reported_models?{reported_models:result.reported_models}:{}),text:result.result.slice(0,messageLimit),...(truncated?{truncated:true}:{})});
-      if(final||truncated){s.status='closed';s.stop_reason=truncated?'peer-message-limit':'round-limit';}
+        ...(result.reported_models?{reported_models:result.reported_models}:{}),...(result.edit_result?{edit_result:result.edit_result}:{}),text:result.result.slice(0,messageLimit),...(truncated?{truncated:true}:{})});
+      if(result.edit_result&&!['applied','no-changes'].includes(result.edit_result.status)){s.status='closed';s.stop_reason='edit-failed';}
+      else if(final||truncated){s.status='closed';s.stop_reason=truncated?'peer-message-limit':'round-limit';}
     } catch(e) {
       s.transcript.push({round,speaker:s.peer,kind:'error',timestamp:new Date(now()).toISOString(),peer_options,text:e.message.slice(0,messageLimit)});
       s.status='closed';s.stop_reason='peer-error';
