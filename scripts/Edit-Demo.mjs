@@ -15,7 +15,7 @@ try {
   const answer=await client.callTool({name:peer+'_discuss',arguments:{
     objective:'Fix average([]) to throw RangeError instead of returning NaN, keep all other behavior. Create note.txt with one short sentence explaining the fix.',
     host_message:'The empty-array division returns NaN. I authorize updating bug.js and creating note.txt only. Add an explicit empty-array guard; return complete file contents. Do not run commands.',
-    cwd:project,max_rounds:1,include_diff:false,access:'edit',edit_files:['bug.js','note.txt'],timeout_ms:300000
+    cwd:project,max_rounds:1,include_diff:false,access:'edit',edit_files:['bug.js','note.txt'],timeout_ms:300000,format:'json'
   }},undefined,{timeout:360000});
   const result=JSON.parse(answer.content[0].text);await fs.writeFile(path.join(local,'edit-demo-'+peer+'.json'),JSON.stringify({project,result},null,2));
   assert.equal(answer.isError,false,JSON.stringify(result));

@@ -31,7 +31,8 @@ test('records save before a peer call and update both formats with all rounds',a
   assert.deepEqual(stored.transcript,second.transcript);
   const markdown=await fs.readFile(second.record.markdown_path,'utf8');
   assert(markdown.includes('第 1 轮 · Codex'));assert(markdown.includes('第 2 轮 · Claude Code'));
-  assert(markdown.includes(start.host_message));assert(markdown.includes('`````text\n'+start.host_message+'\n`````'));
+  assert(markdown.includes(start.host_message+'\n````\n'));assert(markdown.includes('## 最后一轮回复 · Claude Code\n\n回复 2'));
+  assert(markdown.includes('*内容见上方「最后一轮回复」。*'));assert(markdown.includes('```js\nconst value=0;\n```'));
   assert.equal((await fs.readdir(directory)).length,2);assert.equal(calls,2);
 }));
 test('error and early-finish records remain readable after expiry or restart',async()=>withRecords(async(directory,saveRecord)=>{

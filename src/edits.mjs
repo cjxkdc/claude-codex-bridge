@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
+import {unifiedDiff} from './diff.mjs';
 
 export const editSchema={
   type:'object',additionalProperties:false,required:['reply','edits'],
@@ -116,7 +117,8 @@ export async function applyEdits(session,response,{backup_directory,writeFile=re
       await writeFile(session.base,p.name,p.next,p.mode,{create:p.content===null});
       applied.push(p);
     }
-    return {status:'applied',backup_path,changes:applied.map(p=>({path:p.name,operation:p.content===null?'create':'modify',before_sha256:hash(p.content),after_sha256:hash(p.next)}))};
+    return {status:'applied',backup_path,changes:applied.map(p=>({path:p.name,operation:p.content===null?'create':'modify',before_sha256:hash(p.content),after_sha256:hash(p.next),
+      ...unifiedDiff(p.content?.toString('utf8')??null,p.next.toString('utf8'),{path:p.name})}))};
   } catch(e) {
     const retained=[];const rollback_errors=[];
     for(const p of applied.reverse()) {

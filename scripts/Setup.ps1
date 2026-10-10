@@ -11,7 +11,7 @@ $base=[IO.Path]::GetFullPath($InstallRoot)
 $target=[IO.Path]::GetFullPath((Join-Path $base ("versions/"+$package.version)))
 if (!$target.StartsWith($base.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)) {throw 'Installation path escapes its root'}
 New-Item -ItemType Directory -Force $target | Out-Null
-foreach ($name in @('src','scripts','skills','examples','demo','test','docs','installer','vendor','node_modules','package.json','package-lock.json','README.md','CHANGELOG.md','LICENSE','THIRD_PARTY_NOTICES.md')) {
+foreach ($name in @('src','scripts','skills','examples','demo','test','docs','installer','vendor','node_modules','package.json','package-lock.json','README.md','README.en.md','CHANGELOG.md','LICENSE','THIRD_PARTY_NOTICES.md')) {
   $item=Join-Path $sourceRoot $name
   if (Test-Path -LiteralPath $item) {Copy-Item -LiteralPath $item -Destination $target -Recurse -Force}
 }

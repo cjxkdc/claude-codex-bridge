@@ -32,9 +32,13 @@ Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.6.0`
 
 从 v0.3.1 起，每轮自动保存到 **bridge 安装目录下的 `reports/discussions/`**。每个讨论一个 `日期_会话ID.md` 和一个同名 `.json`：Markdown 按轮次显示双方实际发言，JSON 可供程序读取。记录在等待 peer 回复前、收到回复后、发生错误或提前结束时更新，结束后 host 会给出 Markdown 路径。文件不会随一小时会话过期或 MCP 重启而删除；活动会话仍不能在重启后继续。升级安装包会使用新的版本目录，旧记录保留在旧版本目录。
 
-也可在对话里说：“把刚才的讨论记录完整展示出来”“打开这次讨论的 Markdown 记录”。工具返回中的 `transcript` 可直接查看；`record.markdown_path` 和 `record.json_path` 是文件路径。`record.save_status` 若为 `failed`，会返回具体错误，host 应说明没有成功保存。
+Markdown 记录的结构：开头是讨论目标和状态摘要（轮数、结束原因、对方模型设置、权限、工作目录、本机时间），接着是「结论」或「最后一轮回复」，最后按轮次列出讨论过程。双方发言按 Markdown 渲染，其中的标题自动降级，原始 HTML 按文字显示，未闭合的代码块会补上闭合标记，避免打乱记录本身的结构。超过 800 字的 host 发言默认折叠。修改结果以表格列出文件、操作和增删行数，diff 放在可展开的区块中。
 
-记录包含 **host 实际发给 peer 的发言及 peer 返回的正文**，不包含模型内部思考、整个主对话或完整文件/context 快照。单条 peer 回复超过 20,000 字符会截断并标记；达到长度限制即关闭讨论。历史版本未落盘的会话不能凭空恢复；若仍能取到工具返回中的 transcript，可手动另存。
+也可在对话里说：“把刚才的讨论记录完整展示出来”“打开这次讨论的 Markdown 记录”。
+
+讨论工具每轮返回 Markdown 文本：对方本轮回复、修改结果（如有），以及 `session_id`、状态、记录路径和下一步提示。为节省 host 的上下文，不再重复返回之前各轮内容；`action: "status"` 返回整份讨论的 Markdown。review/ask/explain/plan-review 同样返回 Markdown。脚本需要完整结构时传 `format: "json"`，返回值与旧版一致，其中 `record.markdown_path` 和 `record.json_path` 是文件路径；`record.save_status` 若为 `failed`，会返回具体错误，host 应说明没有成功保存。
+
+记录包含 **host 实际发给 peer 的发言及 peer 返回的正文**，不包含模型内部思考、整个主对话或完整文件/context 快照。单条 peer 回复超过 20,000 字符会截断并标记；达到长度限制即关闭讨论。历史版本未落盘的会话不能凭空恢复；若会话仍在一小时有效期内，可用 `action: "status"` 取回完整内容另存。
 
 记录仅存本机，`reports/` 已被 Git 忽略，安装包不包含它。默认讨论和单次审查只读；讨论工具的 MCP `readOnlyHint` 为 false，`destructiveHint` 为 true，因为它会保存记录，并可在明确授权后写入指定项目文件。
 
@@ -54,7 +58,7 @@ Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.6.0`
 - `edit_result.status` 为 `applied` 才表示写入成功；`no-changes` 表示没有修改。`conflict/rejected/failed/partial` 会结束讨论，按返回的 `changes` 和 `error` 检查实际结果。
 - 原文件备份在 `.local/edit-backups/edit-*/files/`，`manifest.json` 保存路径和修改前后的 SHA-256。备份失败不会开始写入；写入中途失败会尝试回滚，未能回滚的文件会明确列出。
 - 检查是写入前的冲突检测，不是跨进程文件锁。等待对方返回期间，当前助手应避免修改同一文件；写入后由当前助手检查 diff、运行测试。
-- 记录保存权限、可修改文件和每轮实际修改状态，不保存结构化输出中的完整文件内容。备份留在本机，不进入仓库或安装包。
+- 记录保存权限、可修改文件、每轮实际修改状态和 unified diff（每个文件最多约 12,000 字符，超出截断），不保存结构化输出中的完整文件内容。备份留在本机，不进入仓库或安装包。
 
 ## MCP 接口
 
@@ -97,7 +101,7 @@ Claude 使用 `--resume <id>`，Codex 使用 `exec resume <id>`，保持会话�
 {"action":"continue","session_id":"返回的 ID","host_message":"我验证了你的假设，结果是……，因此建议……","context":"新证据"}
 ```
 
-返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason`、`transcript`、`created_at`、`updated_at`、`peer_options` 和 `record`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数、cwd、修改权限和文件范围不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
+默认返回 Markdown：对方本轮回复、修改结果，以及 `session_id`、`status`、`stop_reason`、记录路径和 `next_action`。传 `"format":"json"` 时返回 `session_id`、`rounds_used`、`rounds_remaining`、`status`、`stop_reason`、`transcript`、`created_at`、`updated_at`、`peer_options` 和 `record`。`finish` 提前结束，`status` 查询；这两项不调用模型。最大轮数、cwd、修改权限和文件范围不可修改；错误调用占一次尝试并关闭，不自动重试。不能重开会话绕过用户指定的 x。
 
 活动会话在 MCP 进程内存保存，一小时无活动过期；重启服务会失去活动会话，但已保存的记录仍在本机。最多 32 个会话，每个服务进程只允许一次 peer 请求进行中。默认 peer 超时 180 秒，上限 300 秒；安装器设置 Codex MCP 超时 360 秒。
 
@@ -141,8 +145,9 @@ $cfg = Get-Content .local/config.json -Raw -Encoding UTF8 | ConvertFrom-Json
 ```text
 src/bridge.mjs       单跳 CLI adapter、输入保护、超时
 src/discussion.mjs   多轮会话与预算
-src/records.mjs      Markdown/JSON 讨论记录
+src/records.mjs      Markdown/JSON 讨论记录与工具返回文本
 src/edits.mjs        修改授权、文件校验、备份和应用
+src/diff.mjs         修改结果的 unified diff
 src/models.mjs       peer 模型/强度参数与校验
 src/server.mjs       官方 MCP SDK stdio server
 scripts/            安装、注册、打包、demo

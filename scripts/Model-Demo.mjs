@@ -10,7 +10,7 @@ const transport=new StdioClientTransport({command:cfg.node||process.execPath,arg
 try {
   await client.connect(transport);const before=await fs.readFile(path.join(root,'demo/bug.js'));
   const response=await client.callTool({name:`${peer}_discuss`,arguments:{action:'start',cwd:root,files:['demo/bug.js'],include_diff:false,
-    max_rounds:1,model,effort,objective:'验证模型参数：host 发言由演示脚本提供。讨论 average([]) 的最小修复，回复一小段即可。',
+    max_rounds:1,model,effort,format:'json',objective:'验证模型参数：host 发言由演示脚本提供。讨论 average([]) 的最小修复，回复一小段即可。',
     host_message:'空数组平均值为 NaN；我建议抛出 RangeError。请指出需要验证的一个调用方影响，不修改文件。'}},undefined,{timeout:320000});
   const result=JSON.parse(response.content[0].text);
   if(!(await fs.readFile(path.join(root,'demo/bug.js'))).equals(before))throw Error('Demo source changed');

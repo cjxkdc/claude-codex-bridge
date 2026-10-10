@@ -15,7 +15,7 @@ $runtimeRoot=Join-Path $buildRoot 'runtime'
 Expand-Archive -LiteralPath $RuntimeZip -DestinationPath $runtimeRoot
 $stage=Join-Path $buildRoot 'agent-peer-bridge'
 New-Item -ItemType Directory -Force $stage,(Join-Path $stage 'vendor/node'),(Join-Path $stage 'demo') | Out-Null
-foreach ($name in @('src','scripts','skills','examples','test','docs','installer','node_modules','package.json','package-lock.json','README.md','CHANGELOG.md','LICENSE','THIRD_PARTY_NOTICES.md','Install.cmd')) {
+foreach ($name in @('src','scripts','skills','examples','test','docs','installer','node_modules','package.json','package-lock.json','README.md','README.en.md','CHANGELOG.md','LICENSE','THIRD_PARTY_NOTICES.md','Install.cmd')) {
   Copy-Item -LiteralPath (Join-Path $bridgeRoot $name) -Destination $stage -Recurse -Force
 }
 Copy-Item -LiteralPath (Join-Path $bridgeRoot 'demo/bug.js') -Destination (Join-Path $stage 'demo/bug.js')

@@ -38,6 +38,8 @@ test('approved modifications and new files are applied and backed up',async()=>f
   const session=await prepareEdits({cwd,edit_files:['file.js','nested/new.txt','manifest.json']});
   const result=await applyEdits(session,{reply:'fix',edits:[{path:'file.js',content:'fixed\n'},{path:'nested/new.txt',content:'新文件\n'},{path:'manifest.json',content:'{"fixed":true}\n'}]},{backup_directory});
   assert.equal(result.status,'applied');assert.equal(result.changes.length,3);
+  assert.deepEqual([result.changes[0].added,result.changes[0].removed],[1,1]);assert.match(result.changes[0].diff,/^-original$/m);assert.match(result.changes[0].diff,/^\+fixed$/m);
+  assert.match(result.changes[1].diff,/^--- \/dev\/null\n\+\+\+ b\/nested\/new\.txt\n@@ -0,0 \+1,1 @@/);
   assert.equal(await fs.readFile(path.join(cwd,'file.js'),'utf8'),'fixed\n');
   assert.equal(await fs.readFile(path.join(cwd,'nested/new.txt'),'utf8'),'新文件\n');
   assert.equal(await fs.readFile(path.join(result.backup_path,'files/file.js'),'utf8'),'original\n');
@@ -85,7 +87,7 @@ test('permissions cannot escalate or widen; changes and conflicts are recorded',
   await assert.rejects(discuss({peer:'claude',action:'continue',session_id:readonly.session_id,host_message:'x',access:'edit',edit_files:['file.js']}),/immutable/);
   const first=await discuss({...base,access:'edit',edit_files:['file.js']});assert.equal(first.read_only,false);assert.equal(calls.at(-1).access,'edit');
   await assert.rejects(discuss({peer:'claude',action:'continue',session_id:first.session_id,host_message:'x',edit_files:['file.js','new.js']}),/immutable/);
-  const md=await fs.readFile(first.record.markdown_path,'utf8');assert.match(md,/对方权限：edit/);assert.match(md,/修改结果/);
+  const md=await fs.readFile(first.record.markdown_path,'utf8');assert.match(md,/\*\*权限\*\*：可修改 `file\.js`/);assert.match(md,/修改结果：已写入/);assert.match(md,/\| `file\.js` \| 修改 \|/);
   const failing=createDiscussions(async()=>({result:'proposed',edit_result:{status:'conflict',changes:[],error:'host changed'}}));
   const result=await failing({...base,access:'edit',edit_files:['file.js']});assert.equal(result.stop_reason,'edit-failed');assert.equal(result.rounds_used,1);assert.equal(result.transcript.at(-1).edit_result.status,'conflict');
 }));

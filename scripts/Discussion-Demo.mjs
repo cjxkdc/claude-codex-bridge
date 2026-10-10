@@ -6,7 +6,7 @@ import path from 'node:path';
 const peer=process.argv[2]||'codex';if(!['claude','codex'].includes(peer))throw Error('Invalid peer');
 const cfg=await config();const client=new Client({name:'discussion-demo',version:'1'});
 const transport=new StdioClientTransport({command:cfg.node||process.execPath,args:[path.join(root,'src/server.mjs'),`--peer=${peer}`],env:{...process.env}});
-async function turn(input){const r=await client.callTool({name:`${peer}_discuss`,arguments:input},undefined,{timeout:320000});const data=JSON.parse(r.content[0].text);console.log(JSON.stringify(data,null,2));return data;}
+async function turn(input){const r=await client.callTool({name:`${peer}_discuss`,arguments:{...input,format:'json'}},undefined,{timeout:320000});const data=JSON.parse(r.content[0].text);console.log(JSON.stringify(data,null,2));return data;}
 try {
  await client.connect(transport);const before=await fs.readFile(path.join(root,'demo/bug.js'));
  const first=await turn({action:'start',cwd:root,files:['demo/bug.js'],include_diff:false,max_rounds:2,objective:'验证示例（host 发言来自演示脚本，不代表 Claude 模型输出）：Debug average([]) 返回 NaN；确定修复方案与测试，不修改文件。',host_message:'我怀疑根因是空数组时 0/0。我的方案是抛出 RangeError，但想讨论输入契约与调用方影响。请回应这个方案。'});

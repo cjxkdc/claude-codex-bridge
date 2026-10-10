@@ -1,5 +1,7 @@
 # Claude Codex Bridge
 
+简体中文 | [English](README.en.md)
+
 让 Claude Code 和 Codex 一起讨论方案、找 bug、审查代码。
 
 为 **Claude Code 和 ChatGPT 用户**做的工具。ChatGPT 这一侧通过 Codex 桌面应用或 CLI 使用。调用本机已登录的官方 `claude` 和 `codex`，使用现有订阅，无需 API key。

@@ -54,8 +54,8 @@ test('saved records retain per-round requested settings and CLI reported model n
     const stored=JSON.parse(await fs.readFile(final.record.json_path,'utf8'));
     assert.equal(stored.transcript[1].peer_options.effort,'high');assert.equal(stored.transcript[3].peer_options.effort,'medium');
     const md=await fs.readFile(final.record.markdown_path,'utf8');
-    assert(md.includes('请求模型：claude-opus-5-5；请求思考强度：high'));assert(md.includes('请求模型：sonnet；请求思考强度：medium'));
-    assert(md.includes('CLI 报告的使用模型'));assert.equal(stored.peer_options.model,'sonnet');
+    assert(md.includes('模型 claude-opus-5-5 · 思考强度 high（请求值）'));assert(md.includes('模型 sonnet · 思考强度 medium（请求值）'));
+    assert(md.includes('CLI 报告使用 claude-opus-5-5'));assert.equal(stored.peer_options.model,'sonnet');
   } finally {
     if(!path.resolve(directory).startsWith(path.resolve(os.tmpdir())+path.sep))throw Error('Cleanup path escapes temp');
     await fs.rm(directory,{recursive:true,force:true});

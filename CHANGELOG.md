@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Discussion records render each message as Markdown instead of plain-text code blocks, with headings demoted, raw HTML shown literally and unclosed fences closed so messages cannot break the record layout.
+- Records open with the objective, a status summary in local time and the conclusion or final reply, followed by the rounds; long host messages are collapsed.
+- Edit results list files with added/removed line counts and include a collapsible unified diff; the diff is also stored in edit_result.
+- Bold text ending in CJK punctuation (`**结论。**然后`) renders correctly in CommonMark viewers.
+- MCP tools return readable Markdown by default. Discussion turns return only the newest exchange plus session_id, status, record path and next action; action=status returns the full transcript. Pass format=json for the previous structured output.
+
 ## 0.6.0
 
 - Send files to an existing named local Claude Code or Codex conversation in either direction, through new find_chats/send_to_chat MCP tools and chat-transfer skills.
