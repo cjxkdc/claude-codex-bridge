@@ -20,7 +20,9 @@ export async function register(cfg,sourceRoot=root,run=(exe,args)=>spawnSync(exe
   const cc=execute(cfg.claude,['mcp','get','codex-peer'],{optional:true});
   if(cc.status===0&&!/agent-?peer-?bridge/i.test(cc.stdout))throw Error('codex-peer already belongs to another server');
   const targets=[{file:path.join(codexHome,'skills/claude-discuss/SKILL.md'),source:'skills/claude-discuss/SKILL.md'},
-    {file:path.join(profile,'.claude/skills/codex-discuss/SKILL.md'),source:'skills/codex-discuss/SKILL.md'}];
+    {file:path.join(profile,'.claude/skills/codex-discuss/SKILL.md'),source:'skills/codex-discuss/SKILL.md'},
+    {file:path.join(codexHome,'skills/claude-chat/SKILL.md'),source:'skills/claude-chat/SKILL.md'},
+    {file:path.join(profile,'.claude/skills/codex-chat/SKILL.md'),source:'skills/codex-chat/SKILL.md'}];
   for(const t of targets){try{const old=await fs.readFile(t.file,'utf8');if(!old.includes('agent-peer-bridge'))throw Error(`Unrelated skill exists: ${t.file}`);}catch(e){if(e.code!=='ENOENT')throw e;}}
   for(const file of [path.join(codexHome,'config.toml'),path.join(profile,'.claude.json')])await backup(file);
   execute(cfg.codex,['mcp','add','claude-peer',...Object.entries(env).flatMap(([k,v])=>['--env',`${k}=${v}`]),'--',cfg.node,server,'--peer=claude']);
@@ -30,6 +32,6 @@ export async function register(cfg,sourceRoot=root,run=(exe,args)=>spawnSync(exe
   execute(cfg.claude,['mcp','add-json','--scope','user','codex-peer',JSON.stringify({type:'stdio',command:cfg.node,args:[server,'--peer=codex'],env})]);
   for(const t of targets){await fs.mkdir(path.dirname(t.file),{recursive:true});await backup(t.file);await fs.copyFile(path.join(sourceRoot,t.source),t.file);}
   await fs.writeFile(path.join(sourceRoot,'.local/claude-mcp.json'),JSON.stringify({mcpServers:{'codex-peer':{type:'stdio',command:cfg.node,args:[server,'--peer=codex'],env}}},null,2));
-  console.log('Registered MCP servers and discussion skills.');
+  console.log('Registered MCP servers, discussion and chat-transfer skills.');
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)await register(await config());

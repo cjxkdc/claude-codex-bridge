@@ -74,6 +74,7 @@ test('both MCP surfaces advertise peer model and their own supported effort leve
     try {
       await client.connect(transport);const list=await client.listTools();
       for(const tool of list.tools) {
+        if(tool.name.endsWith('_find_chats'))continue;
         assert(tool.inputSchema.properties.model);assert(tool.inputSchema.properties.effort.enum.includes('high'));
         assert.equal(tool.inputSchema.properties.effort.enum.includes('ultra'),peer==='codex');
       }

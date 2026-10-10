@@ -1,4 +1,10 @@
-# Verification · v0.5.0
+# Verification · v0.6.0
+
+- 47 automated tests pass on Windows, covering native title discovery, SQLite/file fallback, approximate/duplicate matching, Windows namespaced paths, human candidate choice, expiring tickets, immutable file copies, binary references, scope/credential/link checks, busy turns, target changes, per-session locks, uncertain delivery, recursion and replayable receipts, plus all earlier discussion/edit behavior.
+- Real logged-in Claude Code 2.1.295 and Codex CLI 0.162.0-alpha.2 each received a UTF-8 test file through the official MCP SDK into a separately created native conversation. Each response included the file's unique HANDOFF marker; the selected native transcript contained the delivery ID and file content. A repeat returned the original receipt without another model turn. Target project directories were checked after delivery.
+- Existing user conversations were not used as delivery targets. Test sender messages came from the demo script. No API key was used. Live client-window refresh was not verified; users may need to reload/resume the target conversation.
+
+## Earlier v0.5.0 verification
 
 - 35 automated tests pass on Windows, including explicit edit authorization, immutable scope, protected paths, new files, full-batch validation, changed-file conflicts, junction/hard-link rejection, backups, write-failure rollback and preservation of external edits. MCP discovery advertises edit access in both directions; one-pass tools remain read-only.
 - Real logged-in Claude Code 2.1.286 and Codex CLI 0.160.0 each completed an edit discussion through MCP using their CLI default model/effort. Each modified an isolated demo file and created a new note file; the bridge confirmed writes, backed up originals, and saved permissions and application results in Markdown/JSON records. The host messages were supplied by the demo script.

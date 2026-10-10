@@ -5,6 +5,8 @@ description: Discuss implementation, design or debugging with locally logged-in 
 
 Use `claude_discuss` from MCP server `claude-peer`. The current Codex conversation is the host; only Claude CLI is launched. For one-pass review use `claude_review`.
 
+For sending files into a named EXISTING Claude Code chat, use the claude-chat skill and claude_find_chats/claude_send_to_chat, rather than starting a new discussion.
+
 When the user specifies Claude's model or reasoning effort, send model/effort as actual tool parameters, not just prompt text. Accept CLI aliases (opus, sonnet, haiku) or exact model IDs. Map explicit “Opus 5.5” to claude-opus-5-5 and “Sonnet 5.5” to claude-sonnet-5-5. Map 低/中/高/超高/最大 to low/medium/high/xhigh/max. Omit unspecified settings to keep CLI defaults. These parameters select Claude; the current Codex conversation keeps its host settings. Continue the same session without resending parameters unless the user requests a change; to reset an option send auto/default. State the requested selection in your response, using returned peer_options/requested; reported_models contains names only when the CLI reports them. Do not present requested settings as independently confirmed effective settings. Account/model restrictions can reject or limit a selection; report the error rather than silently choosing another model.
 
 Start once with objective, cwd, relevant relative files/logs and your initial reasoning in host_message. max_rounds equals the user's x, defaults to 3 and supports 1..20. One round is a host contribution plus a peer response. Continue the SAME session_id, responding to actual peer arguments and supplying new evidence. Finish early when useful. Never restart a closed session to evade the limit.

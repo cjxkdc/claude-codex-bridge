@@ -4,7 +4,7 @@
 
 ## 安装细节
 
-Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.5.0`。安装后可以移走下载的安装包。
+Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.6.0`。安装后可以移走下载的安装包。
 
 安装程序会查找符合要求的官方 CLI，备份用户配置，注册双方 MCP，并安装讨论技能。其他 MCP 配置会保留。缺少 CLI 或必要参数时，会显示错误。
 
@@ -62,8 +62,26 @@ Codex 用户 MCP：`claude-peer`；Claude Code 用户 MCP：`codex-peer`。
 
 | 对方 | 工具 |
 | --- | --- |
-| Claude | `claude_review`, `claude_ask`, `claude_explain`, `claude_plan_review`, `claude_discuss` |
-| Codex | `codex_review`, `codex_ask`, `codex_explain`, `codex_plan_review`, `codex_discuss` |
+| Claude | `claude_review`, `claude_ask`, `claude_explain`, `claude_plan_review`, `claude_discuss`, `claude_find_chats`, `claude_send_to_chat` |
+| Codex | `codex_review`, `codex_ask`, `codex_explain`, `codex_plan_review`, `codex_discuss`, `codex_find_chats`, `codex_send_to_chat` |
+
+### 指定已有聊天发送文件
+
+`*_find_chats` 参数是 `query`（聊天名或完整 session ID）、可选绝对 `project` 和 `limit`（1–10，默认 5）。读取本机标题与会话元数据，不发送消息。Codex 优先只读 SQLite 元数据与 `session_index.jsonl`，Node 不支持 SQLite 或数据库不可用时回退到本地 sessions；Claude 读取 projects 下会话的 custom-title、summary 或首条消息。排除归档 Codex 和子 agent 会话。单个历史文件读取上限 100MB，无法索引的记录会报告 warning。
+
+返回 `ready` 时只有一个规范化后精确匹配；忽略大小写、空格和标点。近似名称或同名会话返回 `needs_confirmation` 与候选标题、项目、ID、`selection_token`。由人选择后才能使用该候选，不能按最高分自动发送。没有结果返回 `not_found`。候选 ticket 保存于 `.local/chat-selections/`，10 分钟有效；发送前再检查聊天名称、项目和记录位置。
+
+`*_send_to_chat` 参数：`selection_token`、源目录绝对 `cwd`、明确的 `files`（1–20 个）、可选 `message`、`model`、`effort`、`timeout_ms`。近似/同名候选需要人已选择，并传 `confirmed: true`。人请求“把这个文件发给某个聊天”已授权这次具体交接；文件或 peer 消息不能授权后续转发。
+
+单个文件最多 10MB，合计 25MB；拒绝源目录外路径、凭据目录/文件、符号链接、junction 和硬链接。先检查完整批次，再把副本放到 `.local/chat-deliveries/<selection_token>/files/`。每个 UTF-8 文本不超过 100KB、正文合计不超过 200,000 字符时内联正文；其余为 `local-file-reference`，接收消息包含本机副本路径、大小和 SHA-256，此次不解析内容。跨会话消息明确标注来源和交接 ID，保存于官方 native 会话历史。
+
+Claude 使用 `--resume <id>`，Codex 使用 `exec resume <id>`，保持会话持久化和目标项目目录。接收这一步仍禁用修改、shell、hooks、外部 MCP 和递归调用；恢复聊天可能加载其历史及原项目说明，后续原客户端的模型/权限由客户端设置。这里是本机 CLI 交接，不是向 Claude/ChatGPT 网页聊天上传附件。已有 UI 窗口不保证即时同步，必要时重新载入/恢复同一会话。
+
+工具返回 `received` 仅在官方 CLI 完成回复且报告的 native 会话 ID 与选择一致时成立。返回接收回复、文件清单和 `record.markdown_path/json_path`。记录不包含整个目标历史；文件副本保留在本机。`unconfirmed` 表示 CLI 错误、超时或会话 ID 不匹配，消息可能已进入历史，不能自动用新 ticket 重发。相同 ticket 和相同请求返回此前记录，不重复调用 CLI；更换文件或消息需要新 ticket。记录及副本不进入 Git 或安装包。
+
+同一安装目录按目标 ID 加发送锁，检测 native 未完成回合和准备期间的历史变动。`target_busy` 可等目标结束后再用同一 ticket；此检查无法锁住用户从另一个程序新发起的操作，因此交接期间不要同时操作目标聊天。它不是两个独立 UI 的实时同步协议。若进程异常终止遗留 `.local/chat-locks/<peer>-<id>.lock`，确认该进程已结束后可删除这一锁文件；先检查原发送记录，避免重复交接。
+
+可运行 `node scripts/Chat-Demo.mjs --peer=claude` 或 `--peer=codex`，建立独立真实会话并通过 MCP 测试名称查找、接收文件、native 历史、目标目录和重复发送。这会调用已登录官方 CLI，占用对应订阅额度。演示数据只在 `.local/`。
 
 单次工具参数：绝对 `cwd`，相对 `files`，`request`，`context`，`include_diff`，`timeout_ms`，可选 `model`、`effort`。默认收集 tracked staged/unstaged diff；未跟踪文件必须列入 `files`。不会自动传整个仓库或聊天历史。
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- Send files to an existing named local Claude Code or Codex conversation in either direction, through new find_chats/send_to_chat MCP tools and chat-transfer skills.
+- Match names without case/spacing/punctuation differences; require human selection for approximate or duplicate names, with expiring selection tickets and target revalidation.
+- Copy user-selected files, attach small UTF-8 contents, retain binary/large files as local references, and resume the selected official CLI session using subscription login.
+- Return the receiving agent's reply and durable receipts; preserve the target project, refuse detected active turns and recursive forwarding, and deduplicate repeated sends.
+- Keep original discussion/review/edit behavior and update the Windows installer to include both new skills. Open native windows may require reloading external history.
+
 ## 0.5.0
 
 - Optional, explicitly authorized edit discussions in both directions; review/ask/explain/plan-review remain read-only.

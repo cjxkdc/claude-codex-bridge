@@ -1,0 +1,31 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {randomUUID} from 'node:crypto';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
+import {argsFor,childEnv,config,root,runProcess} from '../src/bridge.mjs';
+import {discoverChats} from '../src/chats.mjs';
+const peer=process.argv.find(a=>a.startsWith('--peer='))?.slice(7)||'codex';
+if(!['claude','codex'].includes(peer))throw Error('Choose --peer=claude or --peer=codex');
+const cfg=await config(),runId=randomUUID(),dir=path.join(root,'.local','chat-demo-'+peer+'-'+runId);await fs.mkdir(dir,{recursive:true});
+const marker='HANDOFF_'+runId;await fs.writeFile(path.join(dir,'交接演示.txt'),marker+'\n这是双向会话文件交接演示。\n');
+const env={...process.env,USERPROFILE:cfg.profile,HOME:cfg.profile,CODEX_HOME:cfg.codex_home};
+const initArgs=argsFor(peer).filter(a=>!['--ephemeral','--no-session-persistence'].includes(a));
+const initial=await runProcess(cfg[peer],initArgs,'Bridge 文件交接演示 '+runId+'。只回复 READY，不调用工具。',{cwd:dir,env:childEnv(env,{peer}),timeout_ms:180000});
+const native=peer==='claude'?JSON.parse(initial):initial.trim().split(/\r?\n/).map(l=>JSON.parse(l));
+const id=peer==='claude'?native.session_id:native.find(e=>e.type==='thread.started')?.thread_id;
+if(!id)throw Error('CLI did not return a persisted session ID');
+const indexed=(await discoverChats(peer,cfg)).chats.find(c=>c.id===id);if(!indexed)throw Error('New native session was not discoverable');
+const client=new Client({name:'bridge-chat-demo',version:'0.6.0'});const transport=new StdioClientTransport({command:cfg.node,args:[path.join(root,'src/server.mjs'),'--peer='+peer],env:{...env,AGENT_PEER_DEPTH:'0'}});
+try{
+ await client.connect(transport);
+ const result=await client.callTool({name:peer+'_find_chats',arguments:{query:indexed.title,project:dir}},undefined,{timeout:360000});if(result.isError)throw Error(result.content[0].text);const found=JSON.parse(result.content[0].text);if(found.status!=='ready'||found.candidates[0].session_id!==id)throw Error('Named chat resolution: '+JSON.stringify({found,id,title:indexed.title,cwd:indexed.cwd,dir}));
+ const input={selection_token:found.candidates[0].selection_token,cwd:dir,files:['交接演示.txt'],message:'请确认收到文件，并在回复中原样写出文件第一行的 HANDOFF 标记。',timeout_ms:300000};
+ const sent=await client.callTool({name:peer+'_send_to_chat',arguments:input},undefined,{timeout:360000});const receipt=JSON.parse(sent.content[0].text);if(sent.isError||receipt.status!=='received')throw Error(JSON.stringify(receipt));
+ if(!receipt.reply.includes(marker))throw Error('Receiver reply did not contain the transferred file marker');
+ const history=await fs.readFile(indexed.file,'utf8');if(!history.includes('BRIDGE_FILE_DELIVERY '+receipt.delivery_id)||!history.includes(marker))throw Error('Delivery missing from the selected native transcript');
+ const after=(await discoverChats(peer,cfg)).chats.find(c=>c.id===id);if(!after||path.toNamespacedPath(path.resolve(after.cwd)).toLowerCase()!==path.toNamespacedPath(path.resolve(dir)).toLowerCase())throw Error('Delivery changed the native session project');
+ const again=JSON.parse((await client.callTool({name:peer+'_send_to_chat',arguments:input},undefined,{timeout:360000})).content[0].text);if(!again.replayed)throw Error('Repeated delivery was not replayed');
+ await fs.writeFile(path.join(dir,'result.json'),JSON.stringify({peer,runId,id,title:indexed.title,receipt,replayed:again.replayed,history_verified:true},null,2));
+ console.log(JSON.stringify({peer,id,status:receipt.status,history_verified:true,replayed:again.replayed,reply:receipt.reply,record:receipt.record,demo:dir},null,2));
+}finally{await client.close();}

@@ -23,6 +23,8 @@ test('registration preserves private config, passes JSON as one argument and ins
   assert((await fs.readFile(path.join(profile,'.codex/config.toml'),'utf8')).startsWith(original));
   assert((await fs.readdir(path.join(profile,'.codex'))).some(n=>n.includes('peer-backup')));
   assert((await fs.readFile(path.join(profile,'.codex/skills/claude-discuss/SKILL.md'),'utf8')).includes('agent-peer-bridge'));
+  assert((await fs.readFile(path.join(profile,'.codex/skills/claude-chat/SKILL.md'),'utf8')).includes('claude_send_to_chat'));
+  assert((await fs.readFile(path.join(profile,'.claude/skills/codex-chat/SKILL.md'),'utf8')).includes('codex_send_to_chat'));
   const jsonCall=calls.find(c=>c.args[1]==='add-json');const entry=JSON.parse(jsonCall.args.at(-1));assert.equal(entry.command,cfg.node);assert.equal(entry.args[1],'--peer=codex');
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
