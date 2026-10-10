@@ -2,9 +2,9 @@
 
 [简体中文](README.md) | English
 
-Many people use both Claude Code and Codex, and when they want the other model's opinion they end up copying code across by hand. This project connects the two over MCP so they can discuss designs, debug problems and review code directly.
+This tool connects Claude Code and Codex over MCP so that they can discuss designs, debug problems and review code directly. Many developers use both assistants, but when they want the other's opinion they usually have to copy code across by hand. The tool was built to remove that step.
 
-It drives the official `claude` and `codex` CLIs already logged in on your machine and uses your existing Claude and ChatGPT subscriptions, with no API keys. The ChatGPT side connects through the Codex desktop app or CLI.
+It drives the official `claude` and `codex` CLIs already logged in on the local machine and uses existing Claude and ChatGPT subscriptions, with no API keys required. The ChatGPT side connects through the Codex desktop app or CLI.
 
 **Altman❤Dario**
 
