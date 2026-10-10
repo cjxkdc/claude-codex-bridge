@@ -2,9 +2,9 @@
 
 简体中文 | [English](README.en.md)
 
-让 Claude Code 和 Codex 一起讨论方案、找 bug、审查代码。
+很多人同时在用 Claude Code 和 Codex，想听另一方的意见时，往往只能手动把代码复制过去。这个项目通过 MCP 把两者连接起来，让它们可以直接讨论方案、排查问题和审查代码。
 
-为 **Claude Code 和 ChatGPT 用户**做的工具。ChatGPT 这一侧通过 Codex 桌面应用或 CLI 使用。调用本机已登录的官方 `claude` 和 `codex`，使用现有订阅，无需 API key。
+它调用本机已登录的官方 `claude` 和 `codex` CLI，使用现有的 Claude 和 ChatGPT 订阅，不需要 API key。ChatGPT 这一侧通过 Codex 桌面应用或 CLI 接入。
 
 **Altman❤Dario**
 
