@@ -7,6 +7,8 @@
 - Edit results list files with added/removed line counts and include a collapsible unified diff; the diff is also stored in edit_result.
 - Bold text ending in CJK punctuation (`**结论。**然后`) renders correctly in CommonMark viewers.
 - MCP tools return readable Markdown by default. Discussion turns return only the newest exchange plus session_id, status, record path and next action; action=status returns the full transcript. Pass format=json for the previous structured output.
+- Any topic can be discussed: `cwd` is optional for discussions and one-shot tools, and the peer may use general knowledge while statements about the user's files still rely on supplied material.
+- Git is optional. Plain folders and machines without Git no longer fail with `git diff failed`; oversized diffs are truncated instead of failing with ENOBUFS; repositories git refuses to read (for example another owner) and other git errors omit the diff. Truncation and errors are reported as warnings in the result and the record.
 
 ## 0.6.0
 

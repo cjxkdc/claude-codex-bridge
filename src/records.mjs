@@ -90,8 +90,10 @@ function turnBody(turn) {
   const body=[contain(turn.text)];
   if(turn.truncated)body.push('','*此回复超过 20,000 字符，以上为截断后保存的内容。*');
   if(turn.edit_result)body.push('',renderEditResult(turn.edit_result));
+  if(turn.warnings?.length)body.push('',renderWarnings(turn.warnings));
   return body.join('\n');
 }
+const renderWarnings=warnings=>warnings.map(w=>`*说明：${escapeHtml(cell(w))}*`).join('\n');
 function closingTurn(s) {
   const turns=s.transcript||[];
   const conclusion=turns.findLast(t=>t.kind==='conclusion');
@@ -110,7 +112,7 @@ export function renderTranscript(s) {
     `- **双方**：${host} 发起，${peer} 回应`,
     `- **${peer} 设置**：${settings(s.peer_options)}`,
     `- **权限**：${access}`,
-    `- **工作目录**：\`${s.cwd}\``,
+    `- **工作目录**：${s.cwd?`\`${s.cwd}\``:'无（未附带本地文件）'}`,
     `- **时间**：${localTime(s.created_at)} – ${localTime(s.updated_at,{date:!sameDay})}（${zone(s.created_at)}）`,
     `- **会话**：\`${s.session_id}\``,''];
   if(closing)lines.push(`## ${closing.title} · ${closing.speaker}`,'',turnBody(closing.turn),'');
@@ -136,6 +138,7 @@ export function renderDiscussionUpdate(v) {
     lines.push(last.kind==='error'?fenced(last.text):contain(last.text));
     if(last.truncated)lines.push('','*回复超过 20,000 字符，已截断并结束讨论。*');
     if(last.edit_result)lines.push('',renderEditResult(last.edit_result));
+    if(last.warnings?.length)lines.push('',renderWarnings(last.warnings));
   } else if(last?.kind==='conclusion')lines.push('### 讨论已结束','',contain(last.text));
   else lines.push(`### 讨论${v.status==='closed'?'已结束':'进行中'}`);
   const status=v.status==='open'?`open（剩余 ${v.rounds_remaining} 轮）`:`closed · stop_reason: ${v.stop_reason}（${stopLabels[v.stop_reason]||'—'}）`;
@@ -148,6 +151,7 @@ export function renderPeerResult(r) {
   const lines=[`### ${label(r.peer)} · ${r.mode}（只读快照）`,''];
   if(r.requested)lines.push(`*${settings(r.requested,r.reported_models)}*`,'');
   lines.push(contain(r.result));
+  if(r.warnings?.length)lines.push('',renderWarnings(r.warnings));
   return lines.join('\n');
 }
 async function atomicWrite(file,content) {

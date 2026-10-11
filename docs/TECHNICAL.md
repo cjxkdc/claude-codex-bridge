@@ -87,7 +87,9 @@ Claude 使用 `--resume <id>`，Codex 使用 `exec resume <id>`，保持会话�
 
 可运行 `node scripts/Chat-Demo.mjs --peer=claude` 或 `--peer=codex`，建立独立真实会话并通过 MCP 测试名称查找、接收文件、native 历史、目标目录和重复发送。这会调用已登录官方 CLI，占用对应订阅额度。演示数据只在 `.local/`。
 
-单次工具参数：绝对 `cwd`，相对 `files`，`request`，`context`，`include_diff`，`timeout_ms`，可选 `model`、`effort`。默认收集 tracked staged/unstaged diff；未跟踪文件必须列入 `files`。不会自动传整个仓库或聊天历史。
+单次工具参数：可选的绝对 `cwd`，相对 `files`，`request`，`context`，`include_diff`，`timeout_ms`，可选 `model`、`effort`。话题不限于代码；不涉及本地文件时省略 `cwd`，`files` 和修改权限则必须提供 `cwd`。讨论工具同理。
+
+Git 为可选项。`cwd` 位于 git 仓库内时默认附带 tracked staged/unstaged diff，未跟踪文件必须列入 `files`；普通文件夹或未安装 Git 时直接跳过，不影响调用。diff 超出 200KB 输入上限时截断；仓库因所有者不同被 git 拒绝读取或 git 执行出错时不附带 diff。截断和出错都会在返回结果中附带说明（`warnings`），并写入讨论记录。不会自动传整个仓库或聊天历史。
 
 讨论首次调用：
 

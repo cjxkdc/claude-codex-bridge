@@ -41,13 +41,15 @@ export function createDiscussions(callPeer=invoke,{now=Date.now,saveRecord=null}
       if(!Number.isInteger(max_rounds)||max_rounds<1||max_rounds>20)throw Error('max_rounds must be 1..20');
       text(objective,'objective',{required:true,max:10000});
       text(host_message,'host_message',{required:true});
-      if(typeof input.cwd!=='string'||!path.isAbsolute(input.cwd))throw Error('cwd must be an absolute directory path');
+      // cwd is optional for topics without local files; edits always need it.
+      if(input.cwd!==undefined&&(typeof input.cwd!=='string'||!path.isAbsolute(input.cwd)))throw Error('cwd must be an absolute directory path');
       text(input.context??'','context',{max:200000});
       const peer_options=normalizeOptions(peer,input);
       const permissions=normalizeAccess(input);
+      if(permissions.access==='edit'&&input.cwd===undefined)throw Error('Edit access requires cwd');
       if(sessions.size>=32)throw Error('Too many discussions; sessions expire after one idle hour');
       s={id:randomUUID(),peer,objective,max_rounds,rounds_used:0,status:'open',transcript:[],peer_options,...permissions,
-        cwd:input.cwd,files:input.files||[],context:input.context||'',include_diff:input.include_diff??true,created:now(),touched:now(),in_flight:false};
+        cwd:input.cwd??null,files:input.files||[],context:input.context||'',include_diff:input.include_diff??true,created:now(),touched:now(),in_flight:false};
       sessions.set(s.id,s);
     } else {
       s=sessions.get(session_id);
@@ -91,7 +93,7 @@ export function createDiscussions(callPeer=invoke,{now=Date.now,saveRecord=null}
         ...(peer_options.model?{model:peer_options.model}:{}),...(peer_options.effort?{effort:peer_options.effort}:{})});
       const truncated=result.result.length>messageLimit;
       s.transcript.push({round,speaker:s.peer,timestamp:new Date(now()).toISOString(),peer_options,
-        ...(result.reported_models?{reported_models:result.reported_models}:{}),...(result.edit_result?{edit_result:result.edit_result}:{}),text:result.result.slice(0,messageLimit),...(truncated?{truncated:true}:{})});
+        ...(result.reported_models?{reported_models:result.reported_models}:{}),...(result.edit_result?{edit_result:result.edit_result}:{}),...(result.warnings?.length?{warnings:result.warnings}:{}),text:result.result.slice(0,messageLimit),...(truncated?{truncated:true}:{})});
       if(result.edit_result&&!['applied','no-changes'].includes(result.edit_result.status)){s.status='closed';s.stop_reason='edit-failed';}
       else if(final||truncated){s.status='closed';s.stop_reason=truncated?'peer-message-limit':'round-limit';}
     } catch(e) {

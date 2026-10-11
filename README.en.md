@@ -23,7 +23,7 @@ Works in both directions: Claude Code can call Codex, and Codex can call Claude 
 
 A one-click installer is currently available for **Windows x64**.
 
-1. Install the official Claude Code and Codex, and log in to each CLI with your subscription. Git is needed if you want diffs included.
+1. Install the official Claude Code and Codex, and log in to each CLI with your subscription. Git is optional and only used to attach uncommitted changes when discussing code.
 2. Download the file ending in `Setup.exe` from [Releases](https://github.com/cjxkdc/claude-codex-bridge/releases) and run it. Alternatively, download the ZIP, extract it and run `agent-peer-bridge/Install.cmd`.
 3. Restart your Codex and Claude Code conversations.
 
@@ -42,6 +42,12 @@ In **Codex**:
 In **Claude Code**:
 
 > Discuss this implementation plan with Codex, at most 3 rounds.
+
+Topics are not limited to code, for example:
+
+> Chat with Codex about what I should eat today.
+
+Topics unrelated to code need neither a project folder nor Git.
 
 You can also say "ask Claude to review this" or "get a second opinion from Codex", or use the skills:
 

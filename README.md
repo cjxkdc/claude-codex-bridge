@@ -12,7 +12,7 @@
 
 目前提供 **Windows x64** 一键安装包。
 
-1. 先安装官方 Claude Code 和 Codex，并用各自的订阅账号登录 CLI。读取代码改动还需要 Git。
+1. 先安装官方 Claude Code 和 Codex，并用各自的订阅账号登录 CLI。Git 为可选项，仅在讨论代码时用于附带未提交的改动。
 2. 从 [Releases](https://github.com/cjxkdc/claude-codex-bridge/releases) 下载以 `Setup.exe` 结尾的安装包，双击安装。也可以下载 ZIP，完整解压后运行 `agent-peer-bridge/Install.cmd`。
 3. 安装完成后，重新打开 Codex 和 Claude Code 对话。
 
@@ -31,6 +31,12 @@ Claude 桌面版登录与 CLI 登录可能不同。如果提示未登录，按�
 在 **Claude Code** 中：
 
 > 请和 Codex 讨论这个实现方案，最多 3 轮。
+
+话题不限于代码，例如：
+
+> 你和 Codex 聊聊我今天该吃什么。
+
+讨论与代码无关的话题时，不需要指定项目目录，也不需要 Git。
 
 也可以说“请 Claude 审核一下”“让 Codex 给个第二意见”，或者使用技能：
 
