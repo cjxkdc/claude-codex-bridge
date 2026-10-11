@@ -9,7 +9,7 @@ import {renderDiscussionUpdate,renderPeerResult,renderTranscript} from './record
 const formatSchema={format:z.enum(['markdown','json']).default('markdown').describe('markdown (default) returns readable text; json returns the full structured object for scripts.')};
 const selectionSchema=peer=>({model:z.string().regex(modelPattern).optional().describe('Peer CLI model ID or alias; omit for CLI defaults. Use auto/default to reset.'),
   effort:z.enum([...effortLevels[peer],'auto','default']).optional().describe('Peer reasoning effort. Availability depends on the model; omit for CLI defaults. These settings affect the peer, not the host conversation.')});
-const server=new McpServer({name:'agent-peer-bridge',version:'0.7.0'});
+const server=new McpServer({name:'agent-peer-bridge',version:'0.7.1'});
 const selected=process.argv.find(a=>a.startsWith('--peer='))?.slice(7);
 if(selected&&!['claude','codex'].includes(selected))throw Error('Invalid peer filter');
 for(const peer of selected?[selected]:['claude','codex']) for(const mode of ['review','ask','explain','plan-review']) {

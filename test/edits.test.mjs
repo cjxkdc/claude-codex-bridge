@@ -46,6 +46,27 @@ test('approved modifications and new files are applied and backed up',async()=>f
   const manifest=JSON.parse(await fs.readFile(path.join(result.backup_path,'manifest.json'),'utf8'));
   assert.equal(manifest[1].before_sha256,null);assert.match(manifest[0].after_sha256,/^[a-f0-9]{64}$/);
 }));
+test('a permitted short-line rewrite stays applied, backed up and recorded',async()=>fixture(async({cwd,dir,backup_directory})=>{
+  const before='\n'.repeat(90000),after='a\n'.repeat(50000);
+  await fs.writeFile(path.join(cwd,'file.js'),before);
+  const session=await prepareEdits({cwd,edit_files:['file.js']});
+  assert(session.material.length<200000);
+  const result=await applyEdits(session,{reply:'updated',edits:[{path:'file.js',content:after}]},{backup_directory});
+  assert.equal(result.status,'applied');
+  assert.deepEqual([result.changes[0].added,result.changes[0].removed],[50000,90000]);
+  assert.match(result.changes[0].diff,/diff truncated$/);
+  assert.equal(await fs.readFile(path.join(cwd,'file.js'),'utf8'),after);
+  assert.equal(await fs.readFile(path.join(result.backup_path,'files/file.js'),'utf8'),before);
+  const discuss=createDiscussions(async()=>({result:'updated',edit_result:result}),{saveRecord:createTranscriptWriter(path.join(dir,'records'))});
+  const recorded=await discuss({peer:'codex',objective:'Update short lines',host_message:'Apply the approved change',cwd,max_rounds:1,access:'edit',edit_files:['file.js']});
+  assert.equal(recorded.stop_reason,'round-limit');
+  assert.equal(recorded.record.save_status,'saved');
+  const md=await fs.readFile(recorded.record.markdown_path,'utf8');
+  assert.match(md,/修改结果：已写入/);assert.match(md,/\| `file\.js` \| 修改 \| 50000 \| 90000 \|/);
+  const json=JSON.parse(await fs.readFile(recorded.record.json_path,'utf8'));
+  assert.equal(json.transcript.at(-1).edit_result.status,'applied');
+}));
+
 test('unauthorized, duplicate, binary and oversized outputs do not cause any writes',async()=>fixture(async({cwd,backup_directory})=>{
   const session=await prepareEdits({cwd,edit_files:['file.js']});
   for(const extra of [{path:'other.js',content:'bad'},{path:'../outside',content:'bad'},{path:'.env',content:'bad'},{path:'file.js',content:'bad'}]){

@@ -1,6 +1,6 @@
 {
   "name": "agent-peer-bridge",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Claude Code ↔ ChatGPT collaboration via locally authenticated Codex and Claude CLIs",
   "license": "MIT",
   "private": true,

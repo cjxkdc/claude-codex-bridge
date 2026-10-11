@@ -1,4 +1,9 @@
-# Verification · v0.7.0
+# Verification · v0.7.1
+
+- 62 automated tests pass on Windows. The three new regression tests failed against v0.7.0 before the fix: a 90,000-line rewrite, a 140,000-line unchanged suffix, and an approved edit that previously rolled back after writing.
+- The approved edit uses a 90KB original and 100KB replacement, both inside the existing file limits. The replacement stays applied, the backup preserves the original, and Markdown/JSON discussion records save the applied status, line counts and bounded diff. No live model call is needed to reproduce or verify this failure.
+
+## Earlier v0.7.0 verification
 
 - 59 automated tests pass on Windows, adding Markdown containment and CJK bold handling, unified diffs, newest-exchange tool output, topics without cwd, plain folders without git, truncated and refused diffs, CLI discovery across desktop/native/npm layouts, outdated-CLI reasons, login actions and recovery from a CLI removed by a client update.
 - The installer ran under Windows PowerShell 5.1 with `-SkipRegister` in a separate copy: it found the same Claude Code 2.1.295 and Codex CLI 0.162.0-alpha.2 as the existing configuration, reported both logins as valid, chose system Node, and the doctor step passed. A missing `-CodexPath` produced the expected readable error.

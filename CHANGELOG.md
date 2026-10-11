@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1
+
+- Fix diff generation overflowing JavaScript call arguments on large short-line rewrites and long unchanged suffixes. Valid file edits no longer fail and roll back because of this error.
+- Add regression coverage for both diff paths and an approved 90KB-to-100KB rewrite, including the applied file, original backup and saved Markdown/JSON records.
+
 ## 0.7.0
 
 - Discussion records render each message as Markdown instead of plain-text code blocks, with headings demoted, raw HTML shown literally and unclosed fences closed so messages cannot break the record layout.

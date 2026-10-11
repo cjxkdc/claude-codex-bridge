@@ -22,6 +22,22 @@ test('unified diff reports hunks, counts, creation and missing final newline',()
   assert.equal(unifiedDiff('same\n','same\n').diff,'');
   const big=unifiedDiff('a\n'.repeat(50),'b\n'.repeat(50),{maxCells:10,maxChars:60});assert.deepEqual([big.added,big.removed],[50,50]);assert.match(big.diff,/diff truncated$/);
 });
+test('unified diff handles a large short-line rewrite without overflowing call arguments',()=>{
+  const result=unifiedDiff('\n'.repeat(90000),'a\n'.repeat(50000),{path:'many-lines.txt'});
+  assert.deepEqual([result.added,result.removed],[50000,90000]);
+  assert.match(result.diff,/^--- a\/many-lines\.txt\n\+\+\+ b\/many-lines\.txt\n@@ -1,90000 \+1,50000 @@/);
+  assert.match(result.diff,/diff truncated$/);
+  assert(result.diff.length<12050);
+});
+
+test('unified diff handles a large unchanged suffix without overflowing call arguments',()=>{
+  const suffix='\n'.repeat(140000);
+  const result=unifiedDiff('a\n'+suffix,'b\n'+suffix,{path:'suffix.txt'});
+  assert.deepEqual([result.added,result.removed],[1,1]);
+  assert.match(result.diff,/^@@ -1,4 \+1,4 @@\n-a\n\+b\n/m);
+  assert(!result.diff.includes('truncated'));
+});
+
 test('tool output shows only the newest exchange with continuation details',async()=>{
   const discuss=createDiscussions(async i=>({result:`## 回复 ${i.request.slice(0,8)}\n建议先验证调用方`,reported_models:['gpt-x']}));
   const first=await discuss(start);const update=renderDiscussionUpdate(first);

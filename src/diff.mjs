@@ -12,7 +12,11 @@ function operations(a,b,maxCells) {
   let endA=a.length,endB=b.length;while(endA>start&&endB>start&&a[endA-1]===b[endB-1]){endA--;endB--;}
   const result=a.slice(0,start).map(line=>[' ',line]);
   const x=a.slice(start,endA),y=b.slice(start,endB),n=x.length,m=y.length;
-  if(n*m>maxCells)result.push(...x.map(line=>['-',line]),...y.map(line=>['+',line]));
+  // Small text files can still contain more lines than V8 accepts as call arguments.
+  if(n*m>maxCells) {
+    for(const line of x)result.push(['-',line]);
+    for(const line of y)result.push(['+',line]);
+  }
   else {
     const w=m+1,table=new Uint32Array((n+1)*w);
     for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)table[i*w+j]=x[i]===y[j]?table[(i+1)*w+j+1]+1:Math.max(table[(i+1)*w+j],table[i*w+j+1]);
@@ -23,7 +27,7 @@ function operations(a,b,maxCells) {
       else result.push(['+',y[j++]]);
     }
   }
-  result.push(...a.slice(endA).map(line=>[' ',line]));
+  for(let i=endA;i<a.length;i++)result.push([' ',a[i]]);
   return result;
 }
 export function unifiedDiff(before,after,{path:name='file',context=3,maxChars=12000,maxCells=4e6}={}) {
