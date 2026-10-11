@@ -6,9 +6,16 @@
 
 Windows 安装包默认安装到 `%LOCALAPPDATA%\AgentPeerBridge\versions\0.6.0`。安装后可以移走下载的安装包。
 
-安装程序会查找符合要求的官方 CLI，备份用户配置，注册双方 MCP，并安装讨论技能。其他 MCP 配置会保留。缺少 CLI 或必要参数时，会显示错误。
+安装程序会查找符合要求的官方 CLI，备份用户配置，注册双方 MCP，并安装讨论技能。其他 MCP 配置会保留。查找逻辑在 `src/locate.mjs`，安装程序与运行时共用：
 
-如果 Claude CLI 没有登录，按安装窗口给出的 `Start-Claude.ps1 auth login` 命令，用订阅账号登录。Codex CLI 需要用 ChatGPT 账号登录。桌面客户端登录不一定等于 CLI 登录。
+- 查找位置包括 Claude 应用与 Codex 应用自带的 CLI、官方原生安装目录（`~/.local/bin`）、PATH，以及 npm 全局安装的 Codex（使用包内的原生 `codex.exe`）。同一位置有多个版本时取最新且可用的一个。
+- npm 安装的 Claude Code 只有 JS 入口，安装程序会提示运行 `claude install` 安装原生版本。
+- 版本过旧（缺少 bridge 依赖的安全参数）的 CLI 会被跳过，错误信息列出每个被跳过的文件、原因和更新方法。
+- 可运行 `node src/cli.mjs locate` 查看查找结果。
+
+安装程序会检查两边的登录状态：Claude 须使用订阅账号登录（不接受 API key），Codex 须使用 ChatGPT 账号登录。未登录或登录方式不符时不会中断安装，安装完成窗口会列出需要执行的命令，例如 `Start-Claude.ps1 auth login`。桌面客户端登录不一定等于 CLI 登录。
+
+客户端自动更新后，旧版本的 CLI 文件夹可能被删除。bridge 调用时若发现配置中的 CLI 已不存在，会自动改用最新的可用版本并写回 `.local/config.json`，不必重新安装。安装程序优先使用安装包自带或系统安装的 Node，避免依赖会随 Codex 更新而变动的内置 Node。
 
 升级安装包会使用新的版本目录，旧讨论记录保留在旧目录。
 

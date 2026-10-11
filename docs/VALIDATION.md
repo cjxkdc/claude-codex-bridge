@@ -1,4 +1,11 @@
-# Verification · v0.6.0
+# Verification · v0.7.0
+
+- 59 automated tests pass on Windows, adding Markdown containment and CJK bold handling, unified diffs, newest-exchange tool output, topics without cwd, plain folders without git, truncated and refused diffs, CLI discovery across desktop/native/npm layouts, outdated-CLI reasons, login actions and recovery from a CLI removed by a client update.
+- The installer ran under Windows PowerShell 5.1 with `-SkipRegister` in a separate copy: it found the same Claude Code 2.1.295 and Codex CLI 0.162.0-alpha.2 as the existing configuration, reported both logins as valid, chose system Node, and the doctor step passed. A missing `-CodexPath` produced the expected readable error.
+- One real logged-in Codex `ask` call without cwd or git returned a normal answer. No discussion or edit run against a live peer was repeated for this release; their CLI invocation is unchanged from v0.6.0 apart from prompt wording.
+- All 20 previously saved discussion records render in the new Markdown format without errors.
+
+## Earlier v0.6.0 verification
 
 - 47 automated tests pass on Windows, covering native title discovery, SQLite/file fallback, approximate/duplicate matching, Windows namespaced paths, human candidate choice, expiring tickets, immutable file copies, binary references, scope/credential/link checks, busy turns, target changes, per-session locks, uncertain delivery, recursion and replayable receipts, plus all earlier discussion/edit behavior.
 - Real logged-in Claude Code 2.1.295 and Codex CLI 0.162.0-alpha.2 each received a UTF-8 test file through the official MCP SDK into a separately created native conversation. Each response included the file's unique HANDOFF marker; the selected native transcript contained the delivery ID and file content. A repeat returned the original receipt without another model turn. Target project directories were checked after delivery.

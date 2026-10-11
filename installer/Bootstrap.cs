@@ -47,7 +47,11 @@ internal static class Bootstrap {
       string logPath = Path.Combine(app, "install.log");
       File.WriteAllText(logPath, log.ToString(), Encoding.UTF8);
       if (exitCode != 0) throw new InvalidOperationException("Installation failed.\n" + log.ToString() + "\nLog: " + logPath);
-      MessageBox.Show("Agent Peer Bridge installed.\n\nRestart Codex and Claude Code chats.\nCodex: $claude-discuss\nClaude Code: /codex-discuss\n\nUse your subscription CLI login if prompted.\nInstallation log: " + logPath, "Agent Peer Bridge", MessageBoxButtons.OK, MessageBoxIcon.Information);
+      // Install.ps1 prints follow-up steps, such as a missing CLI login, as ACTION lines.
+      StringBuilder actions = new StringBuilder();
+      foreach (string line in log.ToString().Split('\n')) if (line.StartsWith("ACTION: ")) actions.AppendLine("- " + line.Substring(8).Trim());
+      string next = actions.Length == 0 ? "" : "\nBefore first use:\n" + actions.ToString();
+      MessageBox.Show("Agent Peer Bridge installed.\n\nRestart Codex and Claude Code chats.\nCodex: $claude-discuss\nClaude Code: /codex-discuss\n" + next + "\nInstallation log: " + logPath, "Agent Peer Bridge", MessageBoxButtons.OK, actions.Length == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
       return 0;
     } catch (Exception error) {
       if (!extractOnly) MessageBox.Show(error.Message, "Agent Peer Bridge installation", MessageBoxButtons.OK, MessageBoxIcon.Error);

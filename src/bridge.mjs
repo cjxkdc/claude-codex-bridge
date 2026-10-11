@@ -5,9 +5,23 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {normalizeOptions,selectionArgs} from './models.mjs';
 import {normalizeAccess,prepareEdits,applyEdits,editSchema,validateEditResponse} from './edits.mjs';
+import {locatePeer} from './locate.mjs';
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const maxInput = 200000;
-export async function config() { try {return JSON.parse((await fs.readFile(path.join(root,'.local/config.json'),'utf8')).replace(/^\uFEFF/,''));} catch(e) {if(e.code==='ENOENT')return {};throw e;} }
+const configFile=path.join(root,'.local/config.json');
+export async function config(file=configFile) { try {return JSON.parse((await fs.readFile(file,'utf8')).replace(/^\uFEFF/,''));} catch(e) {if(e.code==='ENOENT')return {};throw e;} }
+// Desktop clients replace their versioned CLI folder on update. When the configured CLI has gone,
+// use the newest working copy and remember it, instead of failing until the installer is rerun.
+export async function peerExe(peer,cfg,{file=configFile,locate=locatePeer}={}) {
+  const configured=cfg[peer];
+  if(!configured)return peer;
+  try{if((await fs.stat(configured)).isFile())return configured;}catch{}
+  const found=await locate(peer,{profile:cfg.profile});
+  if(!found.path)throw Error(`${peer} CLI not found at ${configured}; it may have been updated or removed. Rerun the bridge installer.${found.rejected.length?' Rejected: '+found.rejected.map(r=>`${r.path} (${r.reason})`).join('; '):''}`);
+  cfg[peer]=found.path;
+  try{const saved=await config(file);saved[peer]=found.path;const temp=file+'.'+process.pid+'.tmp';await fs.writeFile(temp,JSON.stringify(saved,null,2));await fs.rename(temp,file);}catch{}
+  return found.path;
+}
 export function childEnv(source=process.env,{peer,effort}={}) {
   const env={...source,AGENT_PEER_DEPTH:'1'};
   for(const key of Object.keys(env)) if (/^(OPENAI_API_KEY|CODEX_API_KEY|ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_BASE_URL|OPENAI_BASE_URL|CLAUDE_CODE_USE_BEDROCK|CLAUDE_CODE_USE_VERTEX|CLAUDE_CODE_USE_FOUNDRY)$/.test(key)) delete env[key];
@@ -122,10 +136,10 @@ export async function invoke({peer,mode='review',cwd,files=[],context='',include
   const env=childEnv(process.env,{peer,effort:requested.effort});
   busy=true;let temp;
   try {
-    const cfg=await config();const exe=cfg[peer]||peer;
+    const cfg=await config();const exe=await peerExe(peer,cfg);
     if(peer==='claude') {
       const status=JSON.parse(await runProcess(exe,['auth','status'],'',{env,timeout_ms:15000,allowed_exit_codes:[0,1]}));
-      if(!status.loggedIn||!['claude.ai','oauth'].includes(status.authMethod)) throw Error('Claude subscription CLI login required. Run the configured claude.exe auth login; API key auth is not accepted.');
+      if(!status.loggedIn||!['claude.ai','oauth'].includes(status.authMethod)) throw Error('Claude subscription CLI login required. Run scripts/Start-Claude.ps1 auth login in the bridge folder (the Claude app login is separate); API key auth is not accepted.');
     }
     const editSession=access==='edit'?await prepareEdits({cwd,edit_files:permissions.edit_files}):null;
     const warnings=[];

@@ -73,6 +73,7 @@ Records are written to `reports/discussions/` in the install directory, one Mark
 - Read-only by default. Edits happen only on files you name, when you allow it.
 - Only the files, diffs and context you choose are sent, not the whole repository or chat history. That material goes to the respective official model service.
 - Calls count against each subscription's usage limits.
+- After a client updates itself, the bridge finds the new CLI automatically. If it still cannot, run the installer again.
 - Only local Claude Code and Codex sessions are supported, not claude.ai or chatgpt.com web chats.
 
 ## Install from source

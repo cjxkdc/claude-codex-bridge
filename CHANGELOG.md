@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 - Discussion records render each message as Markdown instead of plain-text code blocks, with headings demoted, raw HTML shown literally and unclosed fences closed so messages cannot break the record layout.
 - Records open with the objective, a status summary in local time and the conclusion or final reply, followed by the rounds; long host messages are collapsed.
@@ -9,6 +9,9 @@
 - MCP tools return readable Markdown by default. Discussion turns return only the newest exchange plus session_id, status, record path and next action; action=status returns the full transcript. Pass format=json for the previous structured output.
 - Any topic can be discussed: `cwd` is optional for discussions and one-shot tools, and the peer may use general knowledge while statements about the user's files still rely on supplied material.
 - Git is optional. Plain folders and machines without Git no longer fail with `git diff failed`; oversized diffs are truncated instead of failing with ENOBUFS; repositories git refuses to read (for example another owner) and other git errors omit the diff. Truncation and errors are reported as warnings in the result and the record.
+- CLI discovery moves to `src/locate.mjs`, shared by the installer and the bridge (`node src/cli.mjs locate`). It also finds npm-installed Codex through its native binary, tells npm-only Claude Code users to run `claude install`, and lists every outdated copy with the reason and update command.
+- The installer checks both logins (Claude subscription, ChatGPT for Codex) and shows the exact login commands in the completion window instead of failing on first use.
+- When a client update removes the configured CLI, the bridge switches to the newest working copy and saves it, instead of failing until the installer is rerun. The installer prefers bundled or system Node over the Codex-internal copy.
 
 ## 0.6.0
 

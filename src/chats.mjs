@@ -4,7 +4,7 @@ import readline from 'node:readline';
 import path from 'node:path';
 import os from 'node:os';
 import {randomUUID,createHash} from 'node:crypto';
-import {argsFor,childEnv,config,parseResult,root,runProcess} from './bridge.mjs';
+import {argsFor,childEnv,config,parseResult,peerExe,root,runProcess} from './bridge.mjs';
 import {normalizeOptions} from './models.mjs';
 
 const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -147,7 +147,7 @@ export async function sendToChat(input,deps={}){
   const options=normalizeOptions(input.peer,input);
   const h=homes(cfg),env=childEnv({...process.env,USERPROFILE:h.profile,HOME:h.profile,CODEX_HOME:h.codex,CLAUDE_CONFIG_DIR:h.claude},{peer:input.peer,effort:options.effort});
   try{
-   const raw=await (deps.run||runProcess)(cfg[input.peer]||input.peer,resumeArgs(input.peer,target.id,options),receiptPrompt(ticket,input.selection_token,attachments,input.message),{cwd:receiverCwd,env,timeout_ms:input.timeout_ms||180000});
+   const raw=await (deps.run||runProcess)(await peerExe(input.peer,cfg),resumeArgs(input.peer,target.id,options),receiptPrompt(ticket,input.selection_token,attachments,input.message),{cwd:receiverCwd,env,timeout_ms:input.timeout_ms||180000});
    const reply=parseResult(input.peer,raw);
    const events=input.peer==='claude'?[JSON.parse(raw)]:raw.trim().split(/\r?\n/).map(l=>JSON.parse(l));
    const resumed=input.peer==='claude'?events[0].session_id:events.find(e=>e.type==='thread.started')?.thread_id;
